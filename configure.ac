@@ -99,6 +99,11 @@ AC_MSG_RESULT([$have_docs])
 # Platform checks
 #
 AC_CANONICAL_HOST
+case "$host" in
+  *-darwin*)
+    have_macos=yes
+    ;;
+esac
 
 AC_MSG_CHECKING([[if we need a __unix__ define]])
 AC_COMPILE_IFELSE([AC_LANG_SOURCE([
@@ -284,7 +289,9 @@ PKG_CHECK_MODULES([XML], [libxml-2.0])
 PKG_CHECK_MODULES([FREETYPE], [freetype2])
 
 # FontConfig
-PKG_CHECK_MODULES([FONTCONFIG], [fontconfig])
+AS_IF([test "$have_macos" != "yes"], [
+	PKG_CHECK_MODULES([FONTCONFIG], [fontconfig])
+])
 
 # vorbis
 PKG_CHECK_MODULES([VORBIS], [vorbis])
@@ -469,7 +476,7 @@ case "$host" in
     NAEV_LIBS="$NAEV_LIBS -mwindows"
     ;;
   *-darwin*)
-    NAEV_LIBS="$NAEV_LIBS -framework Foundation"
+    NAEV_LIBS="$NAEV_LIBS -framework Foundation -framework CoreText"
     ;;
 esac
 
@@ -602,7 +609,6 @@ case "$host" in
     ;;
   *-darwin*)
     AC_DEFINE([MACOS], 1, [Define to 1 if running on macOS])
-    have_macos=yes
     ;;
 esac
 

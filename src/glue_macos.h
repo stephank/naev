@@ -17,5 +17,7 @@ int macos_configPath ( char *res, size_t n );
 int macos_dataPath ( char *res, size_t n );
 int macos_cachePath ( char *res, size_t n );
 
+char * macos_fontFind ( const char *cName );
+
 
 #endif /* GLUE_MACOS_H */

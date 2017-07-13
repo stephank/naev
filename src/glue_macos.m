@@ -86,3 +86,19 @@ int macos_cachePath ( char *res, size_t n )
 {
    return macos_userLibraryDir( @"Caches", res, n );
 }
+
+
+char * macos_fontFind ( const char *cName )
+{
+   NSString *family = [NSString stringWithUTF8String:cName];
+
+   CTFontDescriptorRef fontDesc = CTFontDescriptorCreateWithNameAndSize( (CFStringRef) family, 0 );
+   NSURL *url = CFBridgingRelease( CTFontDescriptorCopyAttribute( fontDesc, kCTFontURLAttribute ) );
+   CFRelease( fontDesc );
+
+   if (![[url scheme] isEqualToString:@"file"])
+      return NULL;
+
+   const char *path = [[url path] cStringUsingEncoding:NSUTF8StringEncoding];
+   return strdup( path );
+}

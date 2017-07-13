@@ -27,7 +27,11 @@
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
 
+#if HAS_MACOS
+#include "glue_macos.h"
+#else
 #include <fontconfig/fontconfig.h>
+#endif
 
 #include "log.h"
 #include "array.h"
@@ -1211,6 +1215,9 @@ static void gl_fontRenderEnd (void)
 /**
  * @brief Tries to find a system font.
  */
+#if HAS_MACOS
+#  define gl_fontFind macos_fontFind
+#else /* HAS_MACOS */
 static char *gl_fontFind( const char *fname )
 {
    FcConfig* config;
@@ -1235,6 +1242,7 @@ static char *gl_fontFind( const char *fname )
    FcPatternDestroy(pat);
    return NULL;
 }
+#endif /* !HAS_MACOS */
 
 
 /**
