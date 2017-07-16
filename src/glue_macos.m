@@ -12,7 +12,7 @@
 
 
 #include "glue_macos.h"
-#include <Foundation/Foundation.h>
+#include <AppKit/AppKit.h>
 
 
 /**
@@ -88,17 +88,45 @@ int macos_cachePath ( char *res, size_t n )
 }
 
 
-char * macos_fontFind ( const char *cName )
+/**
+ * @brief Get path element of a font descriptor URL
+ */
+static char * macos_fontPath ( NSFontDescriptor *desc )
 {
-   NSString *family = [NSString stringWithUTF8String:cName];
-
-   CTFontDescriptorRef fontDesc = CTFontDescriptorCreateWithNameAndSize( (CFStringRef) family, 0 );
+   CTFontDescriptorRef fontDesc = (__bridge CTFontDescriptorRef) desc;
    NSURL *url = CFBridgingRelease( CTFontDescriptorCopyAttribute( fontDesc, kCTFontURLAttribute ) );
-   CFRelease( fontDesc );
 
    if (![[url scheme] isEqualToString:@"file"])
       return NULL;
 
    const char *path = [[url path] cStringUsingEncoding:NSUTF8StringEncoding];
    return strdup( path );
+}
+
+
+/**
+ * Find a font by name, and get its path
+ */
+char * macos_fontFind ( const char *cName, unsigned int h )
+{
+   NSString *name = [NSString stringWithUTF8String:cName];
+   return macos_fontPath([NSFontDescriptor fontDescriptorWithName:name size:h]);
+}
+
+
+/**
+ * @brief Get the path to the default system font
+ */
+char * macos_fontDefault ( unsigned int h )
+{
+   return macos_fontPath([[NSFont userFontOfSize:h] fontDescriptor]);
+}
+
+
+/**
+ * @brief Get the path to the default monospace font
+ */
+char * macos_fontMonospace ( unsigned int h )
+{
+   return macos_fontPath([[NSFont userFixedPitchFontOfSize:h] fontDescriptor]);
 }

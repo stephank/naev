@@ -1218,7 +1218,7 @@ static void gl_fontRenderEnd (void)
 #if HAS_MACOS
 #  define gl_fontFind macos_fontFind
 #else /* HAS_MACOS */
-static char *gl_fontFind( const char *fname )
+static char *gl_fontFind( const char *fname, unsigned int h )
 {
    FcConfig* config;
    FcPattern *pat, *font;
@@ -1262,15 +1262,16 @@ int gl_fontInit( glFont* font, const char *fname, const char *fallback, const un
    int i;
    glFontStash *stsh;
    char *used_font;
+   char is_default, is_monospace;
 
    /* See if we should override fonts. */
    used_font = NULL;
-   if ((strcmp( fallback, FONT_DEFAULT_PATH )==0) &&
-      (conf.font_name_default!=NULL)) {
+   is_default = strcmp( fallback, FONT_DEFAULT_PATH )==0;
+   is_monospace = strcmp( fallback, FONT_MONOSPACE_PATH )==0;
+   if (is_default && (conf.font_name_default!=NULL)) {
       used_font = strdup( conf.font_name_default );
    }
-   else if ((strcmp( fallback, FONT_MONOSPACE_PATH )==0) &&
-      (conf.font_name_monospace!=NULL)) {
+   else if (is_monospace && (conf.font_name_monospace!=NULL)) {
       used_font = strdup( conf.font_name_monospace );
    }
    if (used_font) {
@@ -1283,7 +1284,7 @@ int gl_fontInit( glFont* font, const char *fname, const char *fallback, const un
 
    /* Try to use system font. */
    if (used_font==NULL) {
-      used_font = gl_fontFind( fname );
+      used_font = gl_fontFind( fname, h );
       if (used_font) {
          buf = nfile_readFile( &bufsize, used_font );
          if (buf==NULL) {
@@ -1292,6 +1293,23 @@ int gl_fontInit( glFont* font, const char *fname, const char *fallback, const un
          }
       }
    }
+
+   /* Fallback to system default font */
+#if HAS_MACOS
+   if (used_font==NULL) {
+      if (is_default)
+         used_font = macos_fontDefault( h );
+      else
+         used_font = macos_fontMonospace( h );
+      if (used_font) {
+         buf = nfile_readFile( &bufsize, used_font );
+         if (buf==NULL) {
+            free(used_font);
+            used_font = NULL;
+         }
+      }
+   }
+#endif
 
    /* Fallback to packaged font. */
    if (used_font==NULL) {

@@ -476,7 +476,7 @@ case "$host" in
     NAEV_LIBS="$NAEV_LIBS -mwindows"
     ;;
   *-darwin*)
-    NAEV_LIBS="$NAEV_LIBS -framework Foundation -framework CoreText"
+    NAEV_LIBS="$NAEV_LIBS -framework AppKit"
     ;;
 esac
 
