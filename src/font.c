@@ -115,9 +115,9 @@ typedef struct glFontStash_s {
 
    /* Freetype stuff. */
    char *fontname; /**< Font name. */
-   FT_Face face; /**< Face structure. */
+   char *fontdata; /**< Font data buffer. */
    FT_Library library; /**< Library. */
-   FT_Byte *fontdata; /**< Font data buffer. */
+   FT_Face face; /**< Face structure. */
 } glFontStash;
 
 /**
@@ -1258,7 +1258,7 @@ int gl_fontInit( glFont* font, const char *fname, const char *fallback, const un
    FT_Library library;
    FT_Face face;
    size_t bufsize;
-   FT_Byte* buf;
+   char* buf;
    int i;
    glFontStash *stsh;
    char *used_font;
@@ -1274,7 +1274,7 @@ int gl_fontInit( glFont* font, const char *fname, const char *fallback, const un
       used_font = strdup( conf.font_name_monospace );
    }
    if (used_font) {
-      buf = (FT_Byte*)nfile_readFile( &bufsize, used_font );
+      buf = nfile_readFile( &bufsize, used_font );
       if (buf==NULL) {
          free(used_font);
          used_font = NULL;
@@ -1285,7 +1285,7 @@ int gl_fontInit( glFont* font, const char *fname, const char *fallback, const un
    if (used_font==NULL) {
       used_font = gl_fontFind( fname );
       if (used_font) {
-         buf = (FT_Byte*)nfile_readFile( &bufsize, used_font );
+         buf = nfile_readFile( &bufsize, used_font );
          if (buf==NULL) {
             free(used_font);
             used_font = NULL;
@@ -1330,7 +1330,7 @@ int gl_fontInit( glFont* font, const char *fname, const char *fallback, const un
    }
 
    /* Object which freetype uses to store font info. */
-   if (FT_New_Memory_Face( library, buf, bufsize, 0, &face )) {
+   if (FT_New_Memory_Face( library, (FT_Byte *)buf, bufsize, 0, &face )) {
       WARN("FT_New_Face failed loading library from %s",
             (used_font!=NULL) ? used_font : FONT_DEFAULT_PATH );
       return -1;
@@ -1360,9 +1360,9 @@ int gl_fontInit( glFont* font, const char *fname, const char *fallback, const un
 
    /* Set up font stuff for next glyphs. */
    stsh->fontname = strdup( (used_font!=NULL) ? used_font : FONT_DEFAULT_PATH );
-   stsh->face     = face;
-   stsh->library  = library;
    stsh->fontdata = buf;
+   stsh->library  = library;
+   stsh->face     = face;
 
    /* Set up VBOs. */
    stsh->mvbo = 256;
@@ -1375,14 +1375,8 @@ int gl_fontInit( glFont* font, const char *fname, const char *fallback, const un
    for (i=0; i<128; i++)
       gl_fontGetGlyph( stsh, i );
 
-#if 0
-   /* We can now free the face and library */
-   FT_Done_Face(face);
-   FT_Done_FreeType(library);
-
-   /* Free read buffer. */
-   free(buf);
-#endif
+   /* Free the font name. */
+   free(used_font);
 
    return 0;
 }
@@ -1400,10 +1394,10 @@ void gl_freeFont( glFont* font )
       font = &gl_defFont;
    glFontStash *stsh = gl_fontGetStash( font );
 
-   free(stsh->fontname);
    FT_Done_Face(stsh->face);
-   //FT_Done_FreeType(stsh->library);
+   FT_Done_FreeType(stsh->library);
    free(stsh->fontdata);
+   free(stsh->fontname);
 
    for (i=0; i<array_size(stsh->tex); i++)
       glDeleteTextures( 1, &stsh->tex->id );
